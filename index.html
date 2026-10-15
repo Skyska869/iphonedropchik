@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0b0b12" />
+  <title>Phone Drop</title>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b0b12;
+      --panel: #151520;
+      --muted: #9999ad;
+      --purple: #8b5cf6;
+      --pink: #ec4899;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(ellipse at 50% -15%, #36205d 0, transparent 42%),
+        var(--bg);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button { font: inherit; }
+
+    .app {
+      width: min(100%, 520px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 18px 16px 100px;
+    }
+
+    .topbar, .section-head, .daily, .ref-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .topbar { margin-bottom: 22px; }
+
+    .brand {
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: -.7px;
+    }
+
+    .brand span { color: #b78cff; }
+
+    .balance {
+      padding: 10px 14px;
+      border: 1px solid #ffffff18;
+      border-radius: 14px;
+      background: #ffffff0b;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 156px;
+      padding: 23px 20px;
+      border: 1px solid #ffffff18;
+      border-radius: 24px;
+      background: linear-gradient(125deg, #44227c, #211642 58%, #171322);
+      box-shadow: 0 16px 45px #0006;
+    }
+
+    .hero::after {
+      content: "📱";
+      position: absolute;
+      right: 15px;
+      bottom: -24px;
+      font-size: 122px;
+      transform: rotate(-14deg);
+      opacity: .8;
+      filter: drop-shadow(0 8px 25px #0008);
+    }
+
+    .hero h1, .hero p { position: relative; z-index: 1; }
+    .hero h1 { max-width: 250px; margin: 0 0 8px; font-size: 27px; line-height: 1.05; }
+    .hero p { max-width: 235px; margin: 0; color: #ddd4f4; font-size: 13px; line-height: 1.45; }
+
+    .daily {
+      margin: 16px 0 23px;
+      padding: 15px;
+      border: 1px solid #ffffff12;
+      border-radius: 18px;
+      background: linear-gradient(110deg, #171723, #1d1830);
+    }
+
+    .daily-title { font-weight: 800; }
+    .daily-sub { margin-top: 4px; color: var(--muted); font-size: 12px; }
+
+    .button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--purple), var(--pink));
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .button:disabled {
+      color: #b5b5c4;
+      background: #343442;
+      cursor: default;
+    }
+
+    .section-head {
+      align-items: end;
+      margin: 22px 2px 12px;
+    }
+
+    .section-head h2 { margin: 0; font-size: 19px; }
+    .section-head span { color: var(--muted); font-size: 12px; }
+
+    .cases, .inventory {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .case, .phone-card, .ref-card {
+      position: relative;
+      overflow: hidden;
+      padding: 14px;
+      border: 1px solid #ffffff14;
+      border-radius: 19px;
+      background: linear-gradient(145deg, #20202d, #13131c);
+    }
+
+    .case-art {
+      display: grid;
+      place-items: center;
+      height: 104px;
+      margin: -2px -4px 10px;
+      border-radius: 15px;
+      background:
+        radial-gradient(circle at 50% 65%, #9a62ff55, transparent 46%),
+        linear-gradient(135deg, #272039, #171722);
+      font-size: 65px;
+      filter: drop-shadow(0 9px 12px #0008);
+    }
+
+    .case h3, .phone-card h3 { margin: 0 0 5px; font-size: 14px; }
+    .case p { min-height: 30px; margin: 0 0 12px; color: var(--muted); font-size: 11px; }
+    .case .button { width: 100%; padding: 10px 8px; }
+
+    .phone-card { text-align: center; }    .phone-art { margin: 8px 0; font-size: 43px; filter: drop-shadow(0 7px 10px #0008); }
+    .phone-card small { color: var(--muted); font-size: 11px; }
+    .rarity-label { font-size: 10px; font-weight: 900; text-transform: uppercase; letter-spacing: .6px; }
+
+    .ref-card { margin-top: 22px; }
+    .ref-card h2 { margin: 0 0 7px; font-size: 19px; }
+    .ref-card p { margin: 0 0 13px; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .ref-row { align-items: stretch; }
+    .ref-link {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      padding: 11px;
+      border-radius: 11px;
+      background: #0c0c14;
+      color: #cfc6e7;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .empty {
+      grid-column: 1 / -1;
+      padding: 24px 12px;
+      border: 1px dashed #ffffff20;
+      border-radius: 16px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    .note { margin-top: 10px !important; font-size: 10px !important; }
+
+    .overlay {
+      position: fixed;
+      z-index: 10;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 20px;
+      background: #05050be8;
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay.show { display: grid; }
+
+    .reveal {
+      width: min(100%, 360px);
+      padding: 25px;
+      border: 1px solid #ffffff22;
+      border-radius: 25px;
+      background: #171522;
+      text-align: center;
+      animation: pop-in .35s ease-out both;
+    }
+
+    .reveal-art {
+      margin: 12px 0;
+      font-size: 100px;
+      animation: phone-drop .8s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .reveal h2 { margin: 5px 0; }
+    .reveal p { color: var(--muted); }
+    .reveal.common { box-shadow: 0 0 35px #a1a1aa30; }
+    .reveal.rare { box-shadow: 0 0 45px #38bdf855; }
+    .reveal.epic { box-shadow: 0 0 55px #a855f788; }
+    .reveal.legendary { box-shadow: 0 0 70px #f59e0baa; animation: pop-in .35s ease-out both, glow 1.2s ease-in-out infinite alternate; }
+    .reveal.mythic { box-shadow: 0 0 80px #fb7185cc; animation: pop-in .35s ease-out both, glow 1s ease-in-out infinite alternate; }
+
+    .sparkle {
+      position: fixed;
+      z-index: 11;
+      pointer-events: none;
+      font-size: 18px;
+      animation: sparkle 900ms ease-out forwards;
+    }
+
+    @keyframes phone-drop {
+      0% { transform: translateY(-160px) rotate(-30deg) scale(.45); opacity: 0; }
+      65% { transform: translateY(12px) rotate(8deg) scale(1.12); opacity: 1; }
+      82% { transform: translateY(-7px) rotate(-4deg) scale(.98); }
+      100% { transform: translateY(0) rotate(0) scale(1); }
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: scale(.86); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes glow {
+      from { filter: brightness(1); }
+      to { filter: brightness(1.3); }
+    }
+
+    @keyframes sparkle {
+      from { transform: translate(0, 0) scale(.4) rotate(0); opacity: 1; }
+      to { transform: translate(var(--x), var(--y)) scale(1.5) rotate(120deg); opacity: 0; }
+    }
+
+    @media (max-width: 360px) {
+      .app { padding-left: 12px; padding-right: 12px; }
+      .case, .phone-card { padding: 11px; }
+      .button { padding-left: 10px; padding-right: 10px; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">PHONE <span>DROP</span></div>
+      <div class="balance">🪙 <span id="balance">0</span></div>
+    </header>
+
+    <section class="hero">
+      <h1>Собери коллекцию iPhone</h1>
+      <p>Открывай кейсы, охоться за редкими моделями и пополняй свою коллекцию.</p>
+    </section>
+
+    <section class="daily">
+      <div>
+        <div class="daily-title">🎁 Ежедневный бонус</div>
+        <div class="daily-sub">Забирай монеты раз в день</div>
+      </div>
+      <button class="button" id="dailyButton">Забрать</button>
+    </section>
+
+    <div class="section-head">
+      <h2>Кейсы</h2>
+      <span>Модели iPhone</span>
+    </div>
+    <section class="cases" id="cases"></section>
+
+    <div class="section-head">      <h2>Моя коллекция</h2>
+      <span id="collectionCount">0 моделей</span>
+    </div>
+    <section class="inventory" id="inventory"></section>
+
+    <section class="ref-card">
+      <h2>👥 Пригласи друга</h2>
+      <p>Поделись ссылкой на игру. Реферальный бонус в этой версии демонстрационный.</p>
+      <div class="ref-row">
+        <div class="ref-link" id="refLink">Ссылка появится здесь</div>
+        <button class="button" id="copyButton">Копировать</button>
+      </div>
+      <p class="note">Для настоящего учёта приглашений и безопасного начисления наград подключи сервер.</p>
+    </section>
+  </main>
+
+  <div class="overlay" id="overlay">
+    <div class="reveal" id="reveal">
+      <div id="revealRarity" class="rarity-label"></div>
+      <div class="reveal-art">📱</div>
+      <h2 id="revealName"></h2>
+      <p id="revealDescription"></p>
+      <button class="button" id="closeReveal">Забрать в коллекцию</button>
+    </div>
+  </div>
+
+  <script>
+    const RARITIES = {
+      common:    { name: "Обычный", color: "#a1a1aa" },
+      rare:      { name: "Редкий", color: "#38bdf8" },
+      epic:      { name: "Эпический", color: "#c084fc" },
+      legendary: { name: "Легендарный", color: "#fbbf24" },
+      mythic:    { name: "Мифический", color: "#fb7185" }
+    };
+
+    // Вес модели влияет на шанс выпадения: чем меньше число, тем модель реже.
+    const PHONES = [
+      { name: "iPhone 2G", rarity: "mythic", weight: 1 },
+      { name: "iPhone 3G", rarity: "legendary", weight: 2 },
+      { name: "iPhone 3GS", rarity: "legendary", weight: 2 },
+      { name: "iPhone 4", rarity: "epic", weight: 5 },
+      { name: "iPhone 4s", rarity: "epic", weight: 5 },
+      { name: "iPhone 5", rarity: "rare", weight: 9 },
+      { name: "iPhone 5c", rarity: "rare", weight: 8 },
+      { name: "iPhone 5s", rarity: "epic", weight: 5 },
+      { name: "iPhone 6", rarity: "common", weight: 14 },
+      { name: "iPhone 6 Plus", rarity: "rare", weight: 8 },
+      { name: "iPhone 6s", rarity: "common", weight: 13 },
+      { name: "iPhone 6s Plus", rarity: "rare", weight: 8 },
+      { name: "iPhone SE (1-го поколения)", rarity: "epic", weight: 5 },
+      { name: "iPhone 7", rarity: "common", weight: 13 },
+      { name: "iPhone 7 Plus", rarity: "rare", weight: 8 },
+      { name: "iPhone 8", rarity: "common", weight: 12 },
+      { name: "iPhone 8 Plus", rarity: "rare", weight: 8 },
+      { name: "iPhone X", rarity: "epic", weight: 5 },
+      { name: "iPhone XR", rarity: "rare", weight: 9 },
+      { name: "iPhone XS", rarity: "epic", weight: 5 },
+      { name: "iPhone XS Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone 11", rarity: "common", weight: 12 },
+      { name: "iPhone 11 Pro", rarity: "rare", weight: 8 },
+      { name: "iPhone 11 Pro Max", rarity: "epic", weight: 5 },
+      { name: "iPhone SE (2-го поколения)", rarity: "rare", weight: 8 },
+      { name: "iPhone 12 mini", rarity: "rare", weight: 8 },
+      { name: "iPhone 12", rarity: "common", weight: 12 },
+      { name: "iPhone 12 Pro", rarity: "epic", weight: 5 },
+      { name: "iPhone 12 Pro Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone 13 mini", rarity: "rare", weight: 8 },
+      { name: "iPhone 13", rarity: "common", weight: 12 },
+      { name: "iPhone 13 Pro", rarity: "epic", weight: 5 },
+      { name: "iPhone 13 Pro Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone SE (3-го поколения)", rarity: "rare", weight: 7 },
+      { name: "iPhone 14", rarity: "common", weight: 11 },
+      { name: "iPhone 14 Plus", rarity: "rare", weight: 7 },
+      { name: "iPhone 14 Pro", rarity: "epic", weight: 5 },
+      { name: "iPhone 14 Pro Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone 15", rarity: "common", weight: 11 },
+      { name: "iPhone 15 Plus", rarity: "rare", weight: 7 },
+      { name: "iPhone 15 Pro", rarity: "epic", weight: 5 },
+      { name: "iPhone 15 Pro Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone 16", rarity: "common", weight: 10 },
+      { name: "iPhone 16 Plus", rarity: "rare", weight: 7 },      { name: "iPhone 16 Pro", rarity: "epic", weight: 5 },
+      { name: "iPhone 16 Pro Max", rarity: "legendary", weight: 3 },
+      { name: "iPhone 16e", rarity: "rare", weight: 7 },
+      { name: "iPhone 17", rarity: "common", weight: 10 },
+      { name: "iPhone 17 Air", rarity: "epic", weight: 5 },
+      { name: "iPhone 17 Pro", rarity: "legendary", weight: 3 },
+      { name: "iPhone 17 Pro Max", rarity: "mythic", weight: 1 }
+    ];
+
+    const CASES = [
+      { name: "Стартовый", price: 100, icon: "📦", text: "Первые модели и редкие находки", rarities: ["common", "rare", "epic", "legendary", "mythic"] },
+      { name: "Редкий", price: 300, icon: "💎", text: "Больше шансов на ценные модели", rarities: ["rare", "epic", "legendary", "mythic"] },
+      { name: "Премиум", price: 700, icon: "👑", text: "Только редкие и легендарные", rarities: ["epic", "legendary", "mythic"] },
+      { name: "Мифический", price: 1500, icon: "🌌", text: "Охота за самыми редкими iPhone", rarities: ["legendary", "mythic"] }
+    ];
+
+    const KEY = "phoneDropSaveV1";
+    const defaultState = { balance: 500, inventory: [], lastDaily: "", referralUsed: false };
+    let state = loadState();
+
+    function loadState() {
+      try {
+        return { ...defaultState, ...JSON.parse(localStorage.getItem(KEY) || "{}") };
+      } catch {
+        return { ...defaultState };
+      }
+    }
+
+    function save() {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      render();
+    }
+
+    function render() {
+      document.getElementById("balance").textContent = state.balance;
+      document.getElementById("cases").innerHTML = CASES.map((item, index) => `
+        <article class="case">
+          <div class="case-art">${item.icon}</div>
+          <h3>${item.name}</h3>
+          <p>${item.text}</p>
+          <button class="button" onclick="openCase(${index})">Открыть · 🪙 ${item.price}</button>
+        </article>
+      `).join("");
+
+      const counts = {};
+      state.inventory.forEach(phone => {
+        counts[phone.name] = (counts[phone.name] || 0) + 1;
+      });
+
+      const entries = Object.entries(counts);
+      document.getElementById("collectionCount").textContent = `${entries.length} моделей`;
+      document.getElementById("inventory").innerHTML = entries.length
+        ? entries.map(([name, count]) => {
+            const phone = PHONES.find(item => item.name === name);
+            const rarity = RARITIES[phone.rarity];
+            return `
+              <article class="phone-card" style="border-color:${rarity.color}55">
+                <div class="phone-art">📱</div>
+                <h3>${name}</h3>
+                <div class="rarity-label" style="color:${rarity.color}">${rarity.name}</div>
+                <small>Количество: ${count}</small>
+              </article>
+            `;
+          }).join("")
+        : `<div class="empty">Коллекция пока пустая — открой первый кейс!</div>`;
+
+      const today = new Date().toISOString().slice(0, 10);
+      const dailyButton = document.getElementById("dailyButton");
+      dailyButton.disabled = state.lastDaily === today;
+      dailyButton.textContent = dailyButton.disabled ? "Уже получено" : "Забрать";
+
+      updateReferralLink();
+    }
+
+    function choosePhone(caseItem) {
+      const pool = PHONES.filter(phone => caseItem.rarities.includes(phone.rarity));
+      const total = pool.reduce((sum, phone) => sum + phone.weight, 0);
+      let roll = Math.random() * total;
+
+      for (const phone of pool) {
+        roll -= phone.weight;
+        if (roll <= 0) return phone;
+      }
+      return pool[pool.length - 1];
+    }
+
+    function openCase(index) {
+      const item = CASES[index];
+      if (state.balance < item.price) {
+        alert("Не хватает монет!");
+        return;
+      }
+
+      state.balance -= item.price;
+      save();
+
+      const phone = choosePhone(item);
+      const overlay = document.getElementById("overlay");
+      const reveal = document.getElementById("reveal");
+      const rarity = RARITIES[phone.rarity];
+
+      reveal.className = `reveal ${phone.rarity}`;      document.getElementById("revealRarity").textContent = rarity.name;
+      document.getElementById("revealRarity").style.color = rarity.color;
+      document.getElementById("revealName").textContent = phone.name;
+      document.getElementById("revealDescription").textContent =
+        `Новая модель добавлена в коллекцию · ${rarity.name}`;
+      overlay.classList.add("show");
+
+      if (phone.rarity === "legendary" || phone.rarity === "mythic") makeSparkles();
+
+      document.getElementById("closeReveal").onclick = () => {
+        state.inventory.push(phone);
+        save();
+        overlay.classList.remove("show");
+      };
+    }
+
+    function makeSparkles() {
+      for (let i = 0; i < 22; i++) {
+        const spark = document.createElement("div");
+        spark.className = "sparkle";
+        spark.textContent = Math.random() > 0.5 ? "✨" : "⭐";
+        spark.style.left = `${45 + Math.random() * 10}%`;
+        spark.style.top = `${40 + Math.random() * 20}%`;
+        spark.style.setProperty("--x", `${(Math.random() - 0.5) * 260}px`);
+        spark.style.setProperty("--y", `${(Math.random() - 0.5) * 260}px`);
+        document.body.appendChild(spark);
+        setTimeout(() => spark.remove(), 1000);
+      }
+    }
+
+    document.getElementById("dailyButton").addEventListener("click", () => {
+      const today = new Date().toISOString().slice(0, 10);
+      if (state.lastDaily === today) return;
+      state.lastDaily = today;
+      state.balance += 150;
+      save();
+    });
+
+    function getReferralLink() {
+      const tgUser = window.Telegrahttps://t.me/CarVibeSsBot?startapp=ref_${userId}`m?.WebApp?.initDataUnsafe?.user;
+      const userId = tgUser?.id || "demo";
+      return `;
+    }
+
+    function updateReferralLink() {
+      document.getElementById("refLink").textContent = getReferralLink();
+    }
+
+    document.getElementById("copyButton").addEventListener("click", async () => {
+      const link = getReferralLink();
+      try {
+        await navigator.clipboard.writeText(link);
+        document.getElementById("copyButton").textContent = "Скопировано!";
+        setTimeout(() => document.getElementById("copyButton").textContent = "Копировать", 1500);
+      } catch {
+        alert(link);
+      }
+    });
+
+    // Демонстрационная обработка приглашения: один раз выдаёт бонус приглашённому.
+    // Для реальной системы проверяй Telegram initData и приглашения на сервере.
+    const startParam = window.Telegram?.WebApp?.initDataUnsafe?.start_param || "";
+    if (startParam.startsWith("ref_") && !state.referralUsed) {
+      const inviterId = startParam.slice(4);
+      const ownId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id;
+      if (inviterId && String(inviterId) !== String(ownId)) {
+        state.referralUsed = true;
+        state.balance += 100;
+        localStorage.setItem(KEY, JSON.stringify(state));
+      }
+    }
+
+    window.Telegram?.WebApp?.ready();
+    window.Telegram?.WebApp?.expand();
+    render();
+  </script>
+</body>
+</html>
